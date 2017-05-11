@@ -6,7 +6,7 @@
 
 echo ($registry->code);
 
-if( $registry->tag['analize'] ){
+if( $registry->tag['analyze'] ){
 	// forensiq pixel
 	// cmp = Campaign
 	// p = Source

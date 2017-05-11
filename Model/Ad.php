@@ -133,21 +133,11 @@
 				$timestamp, 
 				$ip, 
 				$userAgent,
+				$tag,
 				$placement, 
 				$tag_id,
 				$placementId
 			);
-
-
-			// match campaign targeting. If not, skip retargeting
-			if ( $this->_matchCampaignTargeting( $cluster, $device ) )
-			{
-				if ( Config\Ad::DEBUG_CACHE )
-					$this->_cache->incrementMapField( 'addebug', 'target_matches' );
-
-				if ( Config\Ad::DEBUG_HTML )
-					echo '<!-- matched campaign targeting -->';
-			}	
 
 
 			//-------------------------------------
@@ -176,6 +166,7 @@
 			$timestamp, 
 			$ip, 
 			$userAgent,
+			array $tag,
 			array $placement, 
 			$tagId,
 			$placementId
@@ -187,7 +178,7 @@
 			if ( $sessionImpCount >= 0 )
 			{	
 				// if imp count is under frequency cap, add cost
-				if ( $sessionImpCount < $placement['frequency_cap'] )
+				if ( $sessionImpCount < $tag['frequency_cap'] )
 				{
 					switch ( $placement['model'] )
 					{
@@ -199,7 +190,7 @@
 
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
 				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
-			
+
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- incremented log -->';
 			}
