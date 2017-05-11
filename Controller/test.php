@@ -1,6 +1,6 @@
 <?php
 
-	namespace Aff\Ad\Controller;
+	namespace Nigma2\Ad\Controller;
 
 	use Aff\Framework,
 		Aff\Ad\Model,

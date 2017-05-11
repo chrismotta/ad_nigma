@@ -1,11 +1,11 @@
 <?php
 
-	namespace Aff\Ad\Controller;
+	namespace Nigma2\Ad\Controller;
 
 	use Aff\Framework,
-		Aff\Ad\Model,
-		Aff\Config,
-		Aff\Ad\Core;
+		Nigma2\Ad\Model,
+		Nigma2\Config,
+		Nigma2\Ad\Core;
 
 
 	class conv extends Core\ControllerAbstract

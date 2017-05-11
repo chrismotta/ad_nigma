@@ -1,12 +1,12 @@
 <?php
 
-	namespace Aff\Ad\Controller;
+	namespace Nigma2\Ad\Controller;
 
 	use Aff\Framework,
-		Aff\Ad\Model,
-		Aff\Config,
-		Aff\Priv,
-		Aff\Ad\Core;
+		Nigma2\Ad\Model,
+		Nigma2\Config,
+		Nigma2\Priv,
+		Nigma2\Ad\Core;
 
 
 	class ad extends Core\ControllerAbstract
@@ -22,7 +22,6 @@
         {
         	$ad = new Model\Ad(
         		$this->_registry,
-        		new Priv\CampaignSelection( $this->_registry ),
         		new Framework\AdServing\FraudDetection\Forensiq(
         			new Framework\TCP\HTTP\Client\cURL(),
         			new Framework\TCP\HTTP\Client\Request(),

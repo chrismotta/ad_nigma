@@ -1,6 +1,6 @@
 <?php
 
-	namespace Aff\Ad\Core;
+	namespace Nigma2\Ad\Core;
 
 	use Aff\Framework;
 

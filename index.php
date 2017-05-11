@@ -1,6 +1,6 @@
 <?php 
 	
-    namespace Aff\Ad;
+    namespace Nigma2\Ad;
 
     // DEBUG
     ini_set('display_errors', 1);
@@ -14,7 +14,7 @@
 
     // PROJECT AUTOLOADER
 	spl_autoload_register( function ( $className ) {
-		$fileName = '.' . DIRECTORY_SEPARATOR . str_replace( 'Aff\\Ad\\', '', $className ). '.php';		
+		$fileName = '.' . DIRECTORY_SEPARATOR . str_replace( 'Nigma2\\Ad\\', '', $className ). '.php';		
 		$fileName = str_replace( '\\', DIRECTORY_SEPARATOR, $fileName );
 
 		if ( is_readable($fileName)  )
@@ -38,24 +38,11 @@
 	});	
 
 
-	// PRIVATE AUTOLOADER
-	spl_autoload_register( function ( $className ) {
-
-		$fileName = '..' . DIRECTORY_SEPARATOR . str_replace( 'Aff\\Priv\\', 'priv\\', $className ). '.php';		
-		$fileName = str_replace( '\\', DIRECTORY_SEPARATOR, $fileName );
-
-		if ( is_readable($fileName)  )
-		{
-			require_once( $fileName );	
-		}	
-
-	});	
-
 
 	// CONFIG AUTOLOADER
 	spl_autoload_register( function ( $className ) {
 
-		$fileName = '..' . DIRECTORY_SEPARATOR . str_replace( 'Aff\\Config\\', 'config\\', $className ). '.php';		
+		$fileName = '..' . DIRECTORY_SEPARATOR . str_replace( 'Nigma2\\Config\\', 'config\\', $className ). '.php';		
 		$fileName = str_replace( '\\', DIRECTORY_SEPARATOR, $fileName );
 		
 		if ( is_readable($fileName)  )

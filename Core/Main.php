@@ -1,9 +1,9 @@
 <?php
 
-	namespace Aff\Ad\Core;
+	namespace Nigma2\Ad\Core;
 
 	use Aff\Framework,
-		Aff\Config;
+		Nigma2\Config;
 
 
 	class Main extends Framework\ObjectAbstract
@@ -59,16 +59,16 @@
         {
         	if ( $name = $this->_registry->httpRequest->getPathElement(0) )
         	{
-	            $class = 'Aff\Ad\Controller\\' . $name;
+	            $class = 'Nigma2\Ad\Controller\\' . $name;
 
 	            if ( !\class_exists( $class ) )
 				{
-					$class = 'Aff\Ad\Controller\\' . Config\Ad::DEFAULT_CONTROLLER;
+					$class = 'Nigma2\Ad\Controller\\' . Config\Ad::DEFAULT_CONTROLLER;
 				}
         	}
         	else
         	{
-				$class = 'Aff\Ad\Controller\\' . Config\Ad::DEFAULT_CONTROLLER;
+				$class = 'Nigma2\Ad\Controller\\' . Config\Ad::DEFAULT_CONTROLLER;
         	}
 
 			$this->_controller = new $class( $this->_registry );
