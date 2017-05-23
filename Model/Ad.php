@@ -76,18 +76,13 @@
 				return false;				
 			}			
 
-			if ( !$placementId )
+			if ( $placementId )
 			{
-				$this->_createWarning( 'Placement not found', 'M000003A', 404 );
-				return false;
+				$placement = $this->_cache->getMap( 'placement:'.$placementId );
 			}
-
-			$placement = $this->_cache->getMap( 'placement:'.$placementId );
-
-			if ( !$placement )
+			else
 			{
-				$this->_createWarning( 'Placement not found', 'M000004A', 404 );
-				return false;				
+				$placement = null;
 			}
 
 			if ( Config\Ad::DEBUG_HTML )
@@ -293,7 +288,7 @@
 
 			if ( 
 				$tag['country']
-				&& strtolower($tag['country']) != $country  
+				&& strtolower($tag['country']) != strtolower($country)
 				&& $tag['country'] != '-'
 				&& $tag['country'] != ''
 			)
@@ -307,7 +302,7 @@
 
 			if ( 
 				$tag['os'] 
-				&& strtolower($tag['os']) != $os 
+				&& $tag['os'] != $os 
 				&& $tag['os'] != '-'
 				&& $tag['os'] != ''
 			)
