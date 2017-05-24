@@ -35,7 +35,7 @@
 		public function render ( $tag_id )
 		{
 			if ( Config\Ad::DEBUG_CACHE )
-				$this->_cache->incrementMapField( 'addebug', 'requests' );
+				$this->_cache->incrementMapField( 'adstats', 'requests' );
 
 			$userAgent   = $this->_registry->httpRequest->getUserAgent();
 			$sessionId   = $this->_registry->httpRequest->getParam('session_id');
@@ -175,12 +175,12 @@
 			if ( $sessionImpCount && $sessionImpCount >= 0 )
 			{	
 				if ( Config\Ad::DEBUG_CACHE )
-					$this->_cache->incrementMapField( 'addebug', 'repeated_imps' );					
+					$this->_cache->incrementMapField( 'adstats', 'repeated_imps' );					
 				// if imp count is under frequency cap, add cost
 				if ( $sessionImpCount < $tag['frequency_cap'] )
 				{
 					if ( Config\Ad::DEBUG_CACHE )
-						$this->_cache->incrementMapField( 'addebug', 'under_cap' );
+						$this->_cache->incrementMapField( 'adstats', 'under_cap' );
 
 					// detections
 					$uaData = $this->_getDeviceData( $userAgent, $timestamp );
@@ -188,7 +188,7 @@
 					$this->_geolocation->detect( $ip );
 
 					if ( Config\Ad::DEBUG_CACHE )
-						$this->_cache->incrementMapField( 'addebug', 'geodetections' );				
+						$this->_cache->incrementMapField( 'adstats', 'geodetections' );				
 
 					// calculate cost and revenue
 					if ( $this->_matchTargeting( 
@@ -220,7 +220,7 @@
 				$this->_geolocation->detect( $ip );
 
 				if ( Config\Ad::DEBUG_CACHE )
-					$this->_cache->incrementMapField( 'addebug', 'geodetections' );				
+					$this->_cache->incrementMapField( 'adstats', 'geodetections' );				
 
 				// calculate cost and revenue
 				if ( $this->_matchTargeting( 
@@ -256,7 +256,7 @@
 				]);
 
 				if ( Config\Ad::DEBUG_CACHE )
-					$this->_cache->incrementMapField( 'addebug', 'under_cap' );	
+					$this->_cache->incrementMapField( 'adstats', 'under_cap' );	
 
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- new log -->';					
@@ -283,7 +283,7 @@
 			}
 
 			if ( Config\Ad::DEBUG_CACHE )
-				$this->_cache->incrementMapField( 'addebug', 'conn_type_matches' );			
+				$this->_cache->incrementMapField( 'adstats', 'conn_type_matches' );			
 
 
 			if ( 
@@ -298,7 +298,7 @@
 
 
 			if ( Config\Ad::DEBUG_CACHE )
-				$this->_cache->incrementMapField( 'addebug', 'country_matches' );
+				$this->_cache->incrementMapField( 'adstats', 'country_matches' );
 
 			if ( 
 				$tag['os'] 
@@ -311,7 +311,7 @@
 			}
 
 			if ( Config\Ad::DEBUG_CACHE )
-				$this->_cache->incrementMapField( 'addebug', 'os_matches' );
+				$this->_cache->incrementMapField( 'adstats', 'os_matches' );
 
 
 			return true;
@@ -329,7 +329,7 @@
 				$this->_deviceDetection->detect( $ua );
 
 				if ( Config\Ad::DEBUG_CACHE )
-					$this->_cache->incrementMapField( 'addebug', 'devicedetections' );				
+					$this->_cache->incrementMapField( 'adstats', 'devicedetections' );				
 
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- using device detector: yes -->';
