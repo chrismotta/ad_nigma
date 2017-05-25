@@ -177,7 +177,7 @@
 				if ( Config\Ad::DEBUG_CACHE )
 					$this->_cache->incrementMapField( 'adstats', 'repeated_imps' );					
 				// if imp count is under frequency cap, add cost
-				if ( $sessionImpCount < $tag['frequency_cap'] )
+				if ( !$tag['frequency_cap'] || $tag['frequency_cap']=='' || $sessionImpCount < $tag['frequency_cap'] )
 				{
 					if ( Config\Ad::DEBUG_CACHE )
 						$this->_cache->incrementMapField( 'adstats', 'under_cap' );
