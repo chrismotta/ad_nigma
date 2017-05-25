@@ -176,14 +176,14 @@
 			{	
 				if ( Config\Ad::DEBUG_CACHE )
 					$this->_cache->incrementMapField( 'adstats', 'repeated_imps' );					
-				// if imp count is under frequency cap, add cost
+				// if tag is open or imp count is under frequency cap, calculate cost and revenue
 				if ( !$tag['frequency_cap'] || $tag['frequency_cap']=='' || $sessionImpCount < $tag['frequency_cap'] )
 				{
 					if ( Config\Ad::DEBUG_CACHE )
 						$this->_cache->incrementMapField( 'adstats', 'under_cap' );
 
 					// detections
-					$uaData = $this->_getDeviceData( $userAgent, $timestamp );
+					$ua = $this->_getDeviceData( $userAgent, $timestamp );
 
 					$this->_geolocation->detect( $ip );
 
@@ -195,7 +195,7 @@
 						$tag, 
 						$this->_geolocation->getConnectionType(), 
 						$this->_geolocation->getCountryCode(), 
-						$uaData['os'] 
+						$ua['os'] 
 					))
 					{							
 						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'cost', $placement['payout']/1000 );
@@ -215,7 +215,7 @@
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
 
 				// detections
-				$uaData = $this->_getDeviceData( $userAgent, $timestamp );
+				$ua = $this->_getDeviceData( $userAgent, $timestamp );
 
 				$this->_geolocation->detect( $ip );
 
@@ -227,7 +227,7 @@
 					$tag, 
 					$this->_geolocation->getConnectionType(), 
 					$this->_geolocation->getCountryCode(), 
-					$uaData['os'] 
+					$ua['os'] 
 				))
 				{					
 					$cost    = $placement['payout']/1000;	
@@ -248,8 +248,15 @@
 					'ip'	          => $ip, 
 					'country'         => $this->_geolocation->getCountryCode(), 
 					'connection_type' => $this->_geolocation->getConnectionType(), 
-					'carrier'		  => $this->_geolocation->getMobileCarrier(), 
-					'user_agent'	  => $uaData['hash'],
+					'carrier'		  => $this->_geolocation->getMobileCarrier(),
+					'user_agent'	  => $ua['ua'],
+					'os' 			  => $ua['os'], 
+					'os_version'	  => $ua['os_version'], 
+					'device'		  => $ua['device'], 
+					'device_model'    => $ua['device_model'], 
+					'device_brand'	  => $ua['device_brand'], 
+					'browser'		  => $ua['browser'], 
+					'browser_version' => $ua['browser_version'], 
 					'imps'			  => 1, 	
 					'revenue'		  => $revenue,			 
 					'cost'			  => $cost
@@ -274,7 +281,7 @@
 		{
 			if ( 
 				$tag['connection_type'] 
-				&& strtolower($tag['connection_type']) != $connection_type 
+				&& $tag['connection_type'] != $connection_type 
 				&& $tag['connection_type'] != '-' 
 				&& $tag['connection_type'] != ''
 			)
@@ -288,7 +295,7 @@
 
 			if ( 
 				$tag['country']
-				&& strtolower($tag['country']) != strtolower($country)
+				&& $tag['country'] != $country
 				&& $tag['country'] != '-'
 				&& $tag['country'] != ''
 			)
@@ -321,10 +328,10 @@
 		private function _getDeviceData( $ua, $timestamp )
 		{
 			$uaHash = md5($ua);
-			$exists   = $this->_cache->exists( 'ua:'.$uaHash );
+			$data   = $this->_cache->getMap( 'ua:'.$uaHash );
 
 			// if devie data is not in cache, use device detection
-			if ( !$exists )
+			if ( !$data )
 			{
 				$this->_deviceDetection->detect( $ua );
 
@@ -334,8 +341,8 @@
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- using device detector: yes -->';
 
-				$this->_cache->setMap( 'ua:'.$uaHash, [
-					'name'			  => $ua,
+				$data =  [
+					'ua'			  => $ua,
 					'os' 			  => $this->_deviceDetection->getOs(),
 					'os_version'	  => $this->_deviceDetection->getOsVersion(), 
 					'device'		  => $this->_deviceDetection->getType(), 
@@ -343,16 +350,15 @@
 					'device_brand'	  => $this->_deviceDetection->getBrand(), 
 					'browser'		  => $this->_deviceDetection->getBrowser(), 
 					'browser_version' => $this->_deviceDetection->getBrowserVersion() 
-				]);
+				];
+
+				$this->_cache->setMap( 'ua:'.$uaHash, $data );
 
 				// add user agent identifier to a set in order to be found by ETL
 				$this->_cache->addToSortedSet( 'uas', $timestamp, $uaHash );				
 			}			
 
-			return [
-				'hash' => $uaHash,
-				'os'   => $this->_deviceDetection->getOs()
-			];
+			return $data;
 		}
 
 
