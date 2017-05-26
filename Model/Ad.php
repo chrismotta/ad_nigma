@@ -32,7 +32,7 @@
 		}
 
 
-		public function render ( $tag_id )
+		public function render ( $tag_id, $tag_type = null )
 		{
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'requests' );
@@ -140,20 +140,52 @@
 			//-------------------------------------
 
 			$tag['id'] = $tag_id;
-			$this->_registry->tag = $tag;
-			$this->_registry->code = $this->_replaceMacros( 
-				$tag['code'], 
-				[
-					'{pubid}' => $publisherId
-				] 
+
+			$this->_render( 
+				$tag, 
+				$tag_type, 
+				$this->_registry->httpRequest->getParam('width'),
+				$this->_registry->httpRequest->getParam('height'),
+				$placementId,
+				$publisherId
 			);
 
-			// pass sid for testing
-			//$this->_registry->sid = $sessionHash;
-			//echo '<!-- session_hash: '.$sessionHash.' -->';
 			// Tell controller process completed successfully
 			$this->_registry->status = 200;
 			return true;
+		}
+
+
+		private function _render( 
+			array $tag, 
+			$tag_type, 
+			$width = null,
+			$height = null,
+			$placementId = null, 
+			$publisherId = null 
+		)
+		{
+			switch ( $tag_type )
+			{
+				case 'js':
+					$this->_registry->view   	  = 'js';
+					$this->_registry->tag    	  = $tag;
+					$this->_registry->width  	  = $width;
+					$this->_registry->height 	  = $height;
+					$this->_registry->placementId = $placementId;
+					$this->_registry->publisherId = $publisherId;
+				break;
+				default:
+					$this->_registry->view = 'iframe';
+					$this->_registry->tag  = $tag;
+					$this->_registry->code = $this->_replaceMacros( 
+						$tag['code'], 
+						[
+							'{pubid}' => $publisherId
+						] 
+					);				
+				break;
+			}
 		}
 
 
@@ -163,7 +195,7 @@
 			$ip, 
 			$userAgent,
 			array $tag,
-			array $placement, 
+			array $placement = null,
 			$tagId,
 			$placementId,
 			$publisherId = null
