@@ -49,15 +49,18 @@
 
 			// check if load balancer exists. If exists get original ip from X-Forwarded-For header
 			$ip = $this->_registry->httpRequest->getHeader('X-Forwarded-For');
+
 			if ( !$ip )
 				$ip = $this->_registry->httpRequest->getSourceIp();
 
-			if ( !$userAgent || !$ip )
+			$ips = \explode( ',', $ip );
+			$ip = $ips[0];
+
+			if ( !$userAgent || !$ip || !\filter_var($ip, \FILTER_VALIDATE_IP) )
 			{
 				$this->_createWarning( 'Bad request', 'M000000A', 400 );
 				return false;
 			}
-
 
 			//-------------------------------------
 			// MATCH TAG AND PLACEMENT
