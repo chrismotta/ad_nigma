@@ -239,6 +239,8 @@
 				}
 
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
+				$this->_cache->removeFromSortedSet( 'loadedlogs', $sessionHash );
+
 				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
 
 				if ( Config\Ad::DEBUG_HTML )
@@ -354,7 +356,6 @@
 
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'os_matches' );
-
 
 			return true;
 		}
