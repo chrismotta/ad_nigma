@@ -239,7 +239,6 @@
 				}
 
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
-				$this->_cache->removeFromSortedSet( 'loadedlogs', $sessionHash );
 
 				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
 
