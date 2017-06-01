@@ -115,7 +115,7 @@
 					$tag_id .
 					$placementId . 
 					$ip . 
-					$userAgent								
+					$userAgent		
 				);
 
 				/*
@@ -134,9 +134,9 @@
 				$tag,
 				$placement, 
 				$tag_id,
-				$placementId
+				$placementId,
+				$publisherId
 			);
-
 
 			//-------------------------------------
 			// RENDER
@@ -327,8 +327,7 @@
 			}
 
 			if ( Config\Ad::DEBUG_CACHE )
-				$this->_cache->incrementMapField( 'adstats', 'conn_type_matches' );			
-
+				$this->_cache->incrementMapField( 'adstats', 'conn_type_matches' );
 
 			if ( 
 				$tag['country']
@@ -339,7 +338,6 @@
 			{
 				return false;			
 			}
-
 
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'country_matches' );
