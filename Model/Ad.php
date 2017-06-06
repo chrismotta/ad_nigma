@@ -81,7 +81,10 @@
 
 			if ( $placementId )
 			{
-				$placement = $this->_cache->getMap( 'placement:'.$placementId );
+				$placement   = $this->_cache->getMap( 'placement:'.$placementId );
+				
+				if ( !$placement )
+					$placementId = null;
 			}
 			else
 			{
@@ -205,12 +208,15 @@
 		)
 		{
 			$sessionImpCount = $this->_cache->getMapField( 'log:'.$sessionHash, 'imps' );
+			$cost 			 = 0.00;
+			$revenue		 = 0.00;
 
 			// if session log exists, increment. Otherwise write new one.
 			if ( $sessionImpCount && $sessionImpCount >= 0 )
 			{	
 				if ( Config\Ad::DEBUG_CACHE )
-					$this->_cache->incrementMapField( 'adstats', 'repeated_imps' );					
+					$this->_cache->incrementMapField( 'adstats', 'repeated_imps' );
+
 				// if tag is open or imp count is under frequency cap, calculate cost and revenue
 				if ( !$tag['frequency_cap'] || $tag['frequency_cap']=='' || $sessionImpCount < $tag['frequency_cap'] )
 				{
@@ -225,22 +231,36 @@
 					if ( Config\Ad::DEBUG_CACHE )
 						$this->_cache->incrementMapField( 'adstats', 'geodetections' );				
 
-					// calculate cost and revenue
-					if ( $this->_matchTargeting( 
-						$tag, 
-						$this->_geolocation->getConnectionType(), 
-						$this->_geolocation->getCountryCode(), 
-						$ua['os'] 
-					))
-					{							
-						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'cost', $placement['payout']/1000 );
-						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'revenue', $tag['payout']/1000 );						
+					// if placement exists and matches target, calculate cost and revenue
+					if ( 
+						$placement 
+						&& $this->_matchTargeting( 
+							$tag, 
+							$this->_geolocation->getConnectionType(), 
+							$this->_geolocation->getCountryCode(), 
+							$ua['os'] 
+						)
+					)
+					{			
+						$cost 	 = $placement['payout']/1000;				
+						$revenue = $tag['payout']/1000;
+
+						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'cost', $cost );
+						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'revenue', $revenue );	
 					}
 				}
 
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
 
 				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
+
+				try{
+					$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue );
+				}
+				catch ( \Exception $e )
+				{
+
+				}
 
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- incremented log -->';
@@ -258,21 +278,24 @@
 				if ( Config\Ad::DEBUG_CACHE )
 					$this->_cache->incrementMapField( 'adstats', 'geodetections' );				
 
-				// calculate cost and revenue
-				if ( $this->_matchTargeting( 
-					$tag, 
-					$this->_geolocation->getConnectionType(), 
-					$this->_geolocation->getCountryCode(), 
-					$ua['os'] 
-				))
+				// if placement exists and matches target, calculate cost and revenue
+				if (
+					$placement  
+					&& $this->_matchTargeting( 
+						$tag, 
+						$this->_geolocation->getConnectionType(), 
+						$this->_geolocation->getCountryCode(), 
+						$ua['os'] 
+					)
+				)
 				{					
 					$cost    = $placement['payout']/1000;	
 					$revenue = $tag['payout']/1000;
 				}
 				else
 				{
-					$cost 	 = 0;
-					$revenue = 0;
+					$cost 	 = 0.00;
+					$revenue = 0.00;
 				}
 
 				// write log
@@ -298,12 +321,56 @@
 					'cost'			  => $cost
 				]);
 
+				try{
+					$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), true, $cost, $revenue );
+				}
+				catch ( \Exception $e )
+				{
+					
+				}
+
+
 				if ( Config\Ad::DEBUG_CACHE )
 					$this->_cache->incrementMapField( 'adstats', 'under_cap' );	
 
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- new log -->';					
 			}
+		}
+
+
+		private function _saveStats ( 
+			$tag_id, 
+			$placement_id, 
+			$date, 
+			$unique, 
+			$cost = 0.00, 
+			$revenue = 0.00 
+		)
+		{
+			if ( $placement_id )
+			{
+				if ( $unique )
+					$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'unique_imps' );
+
+				$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'imps' );
+				$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'cost', $cost );
+				$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'revenue', $revenue );
+
+				if ( $unique )
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'unique_imps' );
+
+				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
+				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
+				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );				
+			}
+
+			if ( $unique )
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'unique_imps' );
+
+			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
+			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
+			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );	
 		}
 
 
