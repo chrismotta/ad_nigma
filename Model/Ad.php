@@ -150,9 +150,6 @@
 			$this->_render( 
 				$tag, 
 				$tag_type, 
-				$this->_registry->httpRequest->getParam('width'),
-				$this->_registry->httpRequest->getParam('height'),
-				$placementId,
 				$publisherId
 			);
 
@@ -164,34 +161,30 @@
 
 		private function _render( 
 			array $tag, 
-			$tag_type, 
-			$width = null,
-			$height = null,
-			$placementId = null, 
+			$tag_type,
 			$publisherId = null 
 		)
 		{
+			$this->_registry->tag  = $tag;
+			$this->_registry->code = $this->_replaceMacros( 
+				$tag['code'], 
+				[
+					'{pubid}' => $publisherId
+				] 
+			);
+
+				
 			switch ( $tag_type )
 			{
 				case 'js':
-					$this->_registry->view   	  = 'js';
-					$this->_registry->tag    	  = $tag;
-					$this->_registry->width  	  = $width;
-					$this->_registry->height 	  = $height;
-					$this->_registry->placementId = $placementId;
-					$this->_registry->publisherId = $publisherId;
+					$this->_registry->view = 'js';
 				break;
 				default:
 					$this->_registry->view = 'iframe';
-					$this->_registry->tag  = $tag;
-					$this->_registry->code = $this->_replaceMacros( 
-						$tag['code'], 
-						[
-							'{pubid}' => $publisherId
-						] 
-					);				
+		
 				break;
 			}
+
 		}
 
 
@@ -255,7 +248,8 @@
 				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
 
 				try{
-					$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue );
+					if ( Config\Ad::DEBUG_CACHE )
+						$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue );
 				}
 				catch ( \Exception $e )
 				{
@@ -322,7 +316,8 @@
 				]);
 
 				try{
-					$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), true, $cost, $revenue );
+					if ( Config\Ad::DEBUG_CACHE )
+						$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), true, $cost, $revenue );
 				}
 				catch ( \Exception $e )
 				{
