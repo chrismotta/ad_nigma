@@ -40,6 +40,10 @@
                     $tagType = 'js';
                     $tagId   = $this->_registry->httpRequest->getPathElement(1);
                 break;
+                case 'js2':
+                    $tagType = 'js2';
+                    $tagId   = $this->_registry->httpRequest->getPathElement(1);
+                break;                
                 default:
                     $tagType = null;
                     $tagId   = $path0;
