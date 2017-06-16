@@ -370,7 +370,7 @@
 			}
 
 			$this->_cache->addToSortedSet( 'tags:'.$date, $timestamp, $tag_id );
-			$this->_cache->addToSet( 'dates', $timestamp, $date );
+			$this->_cache->addToSet( 'dates', $date );
 		}
 
 
