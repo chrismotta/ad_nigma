@@ -47,6 +47,7 @@
 			// GET & VALIDATE USER DATA
 			//-------------------------------------
 
+
 			// check if load balancer exists. If exists get original ip from X-Forwarded-For header
 			$ip = $this->_registry->httpRequest->getHeader('X-Forwarded-For');
 
@@ -71,6 +72,7 @@
 				return false;
 			}
 
+			$this->_cache->useDatabase(0);
 			$tag = $this->_cache->getMap( 'tag:'.$tag_id );
 
 			if ( !$tag )
@@ -91,11 +93,14 @@
 				$placement = null;
 			}
 
+			$this->_cache->useDatabase( $this->_getCurrentDatabase() );
+
 			if ( Config\Ad::DEBUG_HTML )
 			{
 				echo '<!-- ip: '.$ip.' -->';
 				echo '<!-- user agent: '.$userAgent.' -->';					
 			}
+
 
 			//-------------------------------------
 			// CALCULATE SESSION HASH
@@ -247,14 +252,7 @@
 
 				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
 
-				try{
-					if ( Config\Ad::DEBUG_CACHE )
-						$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue );
-				}
-				catch ( \Exception $e )
-				{
-
-				}
+				$this->_saveCounters( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue, $timestamp );
 
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- incremented log -->';
@@ -315,15 +313,7 @@
 					'cost'			  => $cost
 				]);
 
-				try{
-					if ( Config\Ad::DEBUG_CACHE )
-						$this->_saveStats( $tagId, $placementId, \date( 'Ymd', $timestamp ), true, $cost, $revenue );
-				}
-				catch ( \Exception $e )
-				{
-					
-				}
-
+				$this->_saveCounters( $tagId, $placementId, \date( 'Ymd', $timestamp ), true, $cost, $revenue, $timestamp );
 
 				if ( Config\Ad::DEBUG_CACHE )
 					$this->_cache->incrementMapField( 'adstats', 'under_cap' );	
@@ -334,38 +324,53 @@
 		}
 
 
-		private function _saveStats ( 
+		private function _saveCounters ( 
 			$tag_id, 
 			$placement_id, 
 			$date, 
-			$unique, 
+			$first, 
 			$cost = 0.00, 
-			$revenue = 0.00 
+			$revenue = 0.00,
+			$timestamp 
 		)
 		{
 			if ( $placement_id )
 			{
-				if ( $unique )
-					$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'unique_imps' );
-
-				$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'imps' );
-				$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'cost', $cost );
-				$this->_cache->incrementMapField( 'req:'.$tag_id.':'.$placement_id.':'.$date, 'revenue', $revenue );
-
-				if ( $unique )
-					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'unique_imps' );
-
-				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
-				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
-				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );				
+				if ( $first )
+				{
+					$this->_cache->setMap( 'req:p:'.$placement_id.':'.$date, [
+						'unique_imps' => 1,
+						'imps'		  => 1,
+						'cost'		  => $cost,
+						'revenue'	  => $revenue,
+					]);			
+				}
+				else
+				{
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );
+				}
 			}
 
-			if ( $unique )
-				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'unique_imps' );
+			if ( $first )
+			{
+				$this->_cache->setMap( 'req:t:'.$tag_id.':'.$date, [
+					'unique_imps' => 1,
+					'imps'		  => 1,
+					'cost'		  => $cost,
+					'revenue'	  => $revenue
+				]);
+			}
+			else
+			{
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );	
+			}
 
-			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
-			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
-			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );	
+			$this->_cache->addToSortedSet( 'tags:'.$date, $timestamp, $tag_id );
+			$this->_cache->addToSet( 'dates', $timestamp, $date );
 		}
 
 
@@ -422,6 +427,8 @@
 
 		private function _getDeviceData( $ua, $timestamp )
 		{
+			$this->_cache->useDatabase( 0 );
+
 			$uaHash = md5($ua);
 			$data   = $this->_cache->getMap( 'ua:'.$uaHash );
 
@@ -453,6 +460,8 @@
 				$this->_cache->addToSortedSet( 'uas', $timestamp, $uaHash );				
 			}			
 
+			$this->_cache->useDatabase( $this->_getCurrentDatabase() );
+
 			return $data;
 		}
 
@@ -462,6 +471,12 @@
 			$this->_registry->message = $message;
 			$this->_registry->code    = $code;
 			$this->_registry->status  = $status;			
+		}
+
+
+		private function _getCurrentDatabase ( )
+		{
+			return \floor(($this->_registry->httpRequest->getTimestamp()/60/60/24))%2+1;
 		}
 
 	}
