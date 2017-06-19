@@ -339,38 +339,28 @@
 				if ( $first )
 				{
 					$this->_cache->setMap( 'req:p:'.$placement_id.':'.$date, [
-						'unique_imps' => 1,
-						'imps'		  => 1,
-						'cost'		  => $cost,
-						'revenue'	  => $revenue,
+						'unique_imps' => 1
 					]);			
 				}
-				else
-				{
-					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
-					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
-					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );
-				}
+
+				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
+				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
+				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );
 			}
 
 			if ( $first )
 			{
 				$this->_cache->setMap( 'req:t:'.$tag_id.':'.$date, [
-					'unique_imps' => 1,
-					'imps'		  => 1,
-					'cost'		  => $cost,
-					'revenue'	  => $revenue
+					'unique_imps' => 1
 				]);
 			}
-			else
-			{
-				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
-				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
-				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );	
-			}
+
+			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
+			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
+			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );
 
 			$this->_cache->addToSortedSet( 'tags:'.$date, $timestamp, $tag_id );
-			$this->_cache->addToSet( 'dates', $date );
+			$this->_cache->addToSet( 'dates', \date('Y-m-d', $timestamp) );
 		}
 
 
