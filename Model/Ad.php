@@ -236,7 +236,8 @@
 							$tag, 
 							$this->_geolocation->getConnectionType(), 
 							$this->_geolocation->getCountryCode(), 
-							$ua['os'] 
+							$ua['os'],
+							$ua['device'] 
 						)
 					)
 					{			
@@ -277,7 +278,8 @@
 						$tag, 
 						$this->_geolocation->getConnectionType(), 
 						$this->_geolocation->getCountryCode(), 
-						$ua['os'] 
+						$ua['os'],
+						$ua['device']
 					)
 				)
 				{					
@@ -338,9 +340,7 @@
 			{
 				if ( $first )
 				{
-					$this->_cache->setMap( 'req:p:'.$placement_id.':'.$date, [
-						'unique_imps' => 1
-					]);			
+					$this->_cache->setMapField( 'req:p:'.$placement_id.':'.$date, 'unique_imps', 1 );			
 				}
 
 				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
@@ -350,9 +350,7 @@
 
 			if ( $first )
 			{
-				$this->_cache->setMap( 'req:t:'.$tag_id.':'.$date, [
-					'unique_imps' => 1
-				]);
+				$this->_cache->setMapField( 'req:t:'.$tag_id.':'.$date, 'unique_imps', 1 );
 			}
 
 			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
@@ -370,7 +368,7 @@
 		}
 
 
-		private function _matchTargeting ( array $tag, $connection_type, $country, $os )
+		private function _matchTargeting ( array $tag, $connection_type, $country, $os, $device )
 		{
 			if ( 
 				$tag['connection_type'] 
@@ -410,6 +408,30 @@
 
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'os_matches' );
+
+			if ( $tag['device'] )
+			{
+				$device = \strtolower($device);
+
+				switch ( $tag['device'] )
+				{
+					case 'mobile+tablet':
+						if ( $device!='phablet' && $device!='smartphone' && $device!='tablet' )
+							return false;
+					break;
+					case 'mobile':
+						if ( $device!='phablet' && $device!='smartphone' )
+							return false;
+					break;
+					default:
+						if ( $tag['device'] != $device )
+							return false;
+					break;
+				}
+			}
+
+			if ( Config\Ad::DEBUG_CACHE )
+				$this->_cache->incrementMapField( 'adstats', 'device_matches' );			
 
 			return true;
 		}
