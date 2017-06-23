@@ -13,6 +13,7 @@
 		private $_geolocation;
 		private $_cache;
 		private $_fraudDetection;
+		private $_passback;
 
 
 		public function __construct ( 
@@ -29,6 +30,7 @@
 			$this->_geolocation     	= $geolocation;
 			$this->_cache           	= $cache;
 			$this->_fraudDetection		= $fraudDetection;
+			$this->_passback			= false;
 		}
 
 
@@ -152,15 +154,21 @@
 
 			$tag['id'] = $tag_id;
 
-			$this->_render( 
-				$tag, 
-				$tag_type, 
-				$publisherId
-			);
+			if ( 
+				$this->_render( 
+					$tag, 
+					$tag_type, 
+					$publisherId 
+				)
+			)
+			{
+				// Tell controller & view process completed successfully
+				$this->_registry->status = 200;
+				return true;
+			}
 
-			// Tell controller process completed successfully
-			$this->_registry->status = 200;
-			return true;
+			$this->_createWarning( 'No creative matched', 'M000003A', 404 );
+			return false;
 		}
 
 
@@ -171,14 +179,28 @@
 		)
 		{
 			$this->_registry->tag  = $tag;
+
+			if ( $this->_passback )
+			{
+				if ( !$tag['passback_tag'] )
+				{
+					return false;
+				}				
+
+				$code = $tag['passback_tag'];
+			}
+			else
+			{
+				$code = $tag['code'];
+			}
+
 			$this->_registry->code = $this->_replaceMacros( 
-				$tag['code'], 
+				$code,	
 				[
 					'{pubid}' => $publisherId
 				] 
 			);
 
-				
 			switch ( $tag_type )
 			{
 				case 'js':
@@ -186,10 +208,10 @@
 				break;
 				default:
 					$this->_registry->view = 'iframe';
-		
 				break;
 			}
 
+			return true;
 		}
 
 
@@ -212,6 +234,8 @@
 			// if session log exists, increment. Otherwise write new one.
 			if ( $sessionImpCount && $sessionImpCount >= 0 )
 			{	
+				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'requests' );
+
 				if ( Config\Ad::DEBUG_CACHE )
 					$this->_cache->incrementMapField( 'adstats', 'repeated_imps' );
 
@@ -231,8 +255,7 @@
 
 					// if placement exists and matches target, calculate cost and revenue
 					if ( 
-						$placement 
-						&& $this->_matchTargeting( 
+						$this->_matchTargeting( 
 							$tag, 
 							$this->_geolocation->getConnectionType(), 
 							$this->_geolocation->getCountryCode(), 
@@ -240,26 +263,39 @@
 							$ua['device'] 
 						)
 					)
-					{			
-						$cost 	 = $placement['payout']/1000;				
-						$revenue = $tag['payout']/1000;
+					{
+						if ( $placement )
+						{
+							$cost 	 = $placement['payout']/1000;				
+							$revenue = $tag['payout']/1000;
 
-						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'cost', $cost );
-						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'revenue', $revenue );	
+							$this->_cache->incrementMapField( 'log:'.$sessionHash, 'cost', $cost );
+							$this->_cache->incrementMapField( 'log:'.$sessionHash, 'revenue', $revenue );
+						}			
+
+						$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
 					}
+					else
+					{
+						$this->_passback = true;
+					}
+				}
+				else
+				{
+					$this->_passback = true;
 				}
 
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
 
-				$this->_cache->incrementMapField( 'log:'.$sessionHash, 'imps' );
-
-				$this->_saveCounters( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue, $timestamp );
+				$this->_saveCounters( $tagId, $placementId, \date( 'Ymd', $timestamp ), false, $cost, $revenue, $timestamp );	
 
 				if ( Config\Ad::DEBUG_HTML )
 					echo '<!-- incremented log -->';
 			}
 			else
 			{
+				$imps = 1;
+
 				// save log index into a set in order to know all logs from ETL script
 				$this->_cache->addToSortedSet( 'sessionhashes', $timestamp, $sessionHash );
 
@@ -272,9 +308,8 @@
 					$this->_cache->incrementMapField( 'adstats', 'geodetections' );				
 
 				// if placement exists and matches target, calculate cost and revenue
-				if (
-					$placement  
-					&& $this->_matchTargeting( 
+				if ( 
+					$this->_matchTargeting( 
 						$tag, 
 						$this->_geolocation->getConnectionType(), 
 						$this->_geolocation->getCountryCode(), 
@@ -282,18 +317,30 @@
 						$ua['device']
 					)
 				)
-				{					
-					$cost    = $placement['payout']/1000;	
-					$revenue = $tag['payout']/1000;
+				{	
+					if ( $placement )				
+					{
+						$cost    = $placement['payout']/1000;	
+						$revenue = $tag['payout']/1000;
+					}
+					else
+					{
+						$cost 	 = 0.00;
+						$revenue = 0.00;						
+					}
 				}
 				else
 				{
+					$this->_passback = true;
+					$imps 	 = 0;
+
 					$cost 	 = 0.00;
 					$revenue = 0.00;
 				}
 
 				// write log
 				$this->_cache->setMap( 'log:'.$sessionHash, [
+					'requests'		  => 1,
 					'tag_id'		  => $tagId, 
 					'placement_id'	  => $placementId, 
 					'publisher_id'	  => $publisherId,
@@ -310,7 +357,7 @@
 					'device_brand'	  => $ua['device_brand'], 
 					'browser'		  => $ua['browser'], 
 					'browser_version' => $ua['browser_version'], 
-					'imps'			  => 1, 	
+					'imps'			  => $imps, 	
 					'revenue'		  => $revenue,			 
 					'cost'			  => $cost
 				]);
@@ -333,29 +380,59 @@
 			$first, 
 			$cost = 0.00, 
 			$revenue = 0.00,
-			$timestamp 
+			$timestamp
 		)
 		{
-			if ( $placement_id )
+			if ( $this->_passback )
 			{
-				if ( $first )
+				if ( $placement_id )
 				{
-					$this->_cache->setMapField( 'req:p:'.$placement_id.':'.$date, 'unique_imps', 1 );			
+					if ( $first )
+					{
+						$this->_cache->setMapField( 'req:p:'.$placement_id.':'.$date, 'unique_imps', 0 );
+					}
+
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'requests' );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps', 0 );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', 0.00 );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', 0.00 );
 				}
 
-				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
-				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
-				$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );
-			}
+				if ( $first )
+				{
+					$this->_cache->setMapField( 'req:t:'.$tag_id.':'.$date, 'unique_imps', 0 );
+				}
 
-			if ( $first )
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'requests' );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps', 0 );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', 0.00 );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', 0.00 );				
+			}
+			else
 			{
-				$this->_cache->setMapField( 'req:t:'.$tag_id.':'.$date, 'unique_imps', 1 );
-			}
+				if ( $placement_id )
+				{
+					if ( $first )
+					{
+						$this->_cache->setMapField( 'req:p:'.$placement_id.':'.$date, 'unique_imps', 1 );
+					}
 
-			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
-			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
-			$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'requests' );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'imps' );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'cost', $cost );
+					$this->_cache->incrementMapField( 'req:p:'.$placement_id.':'.$date, 'revenue', $revenue );
+				}
+
+				if ( $first )
+				{
+					$this->_cache->setMapField( 'req:t:'.$tag_id.':'.$date, 'unique_imps', 1 );
+				}
+
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'requests' );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'imps' );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'cost', $cost );
+				$this->_cache->incrementMapField( 'req:t:'.$tag_id.':'.$date, 'revenue', $revenue );
+			}
 
 			$this->_cache->addToSortedSet( 'tags:'.$date, $timestamp, $tag_id );
 			$this->_cache->addToSet( 'dates', \date('Y-m-d', $timestamp) );
@@ -424,7 +501,11 @@
 							return false;
 					break;
 					default:
-						if ( $tag['device'] != $device )
+						if ( 
+							$tag['device'] != $device 
+							&& $tag['device'] != '-'
+							&& $tag['device'] != ''							
+						)
 							return false;
 					break;
 				}
