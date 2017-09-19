@@ -185,10 +185,10 @@
 				if ( !$tag['passback_tag'] )
 				{
 					// when no match and no passback tag returns true and sends tag code
-					$code = $this->_replaceQueryStringMacros( $tag['code'] );
+					//$code = $this->_replaceQueryStringMacros( $tag['code'] );
 
 					// when no match and no passback tag returns false and send warning
-					// return false 
+					return false;
 				}	
 				else
 				{
