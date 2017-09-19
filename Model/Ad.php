@@ -184,14 +184,20 @@
 			{
 				if ( !$tag['passback_tag'] )
 				{
-					return false;
-				}				
+					// when no match and no passback tag returns true and sends tag code
+					$code = $this->_replaceQueryStringMacros( $tag['code'] );
 
-				$code = $tag['passback_tag'];
+					// when no match and no passback tag returns false and send warning
+					// return false 
+				}	
+				else
+				{
+					$code = $tag['passback_tag'];	
+				}			
 			}
 			else
 			{
-				$code = $tag['code'];
+				$code = $this->_replaceQueryStringMacros( $tag['code'] );
 			}
 
 			$this->_registry->code = $this->_replaceMacros( 
@@ -260,7 +266,8 @@
 							$this->_geolocation->getConnectionType(), 
 							$this->_geolocation->getCountryCode(), 
 							$ua['os'],
-							$ua['device'] 
+							$ua['device'],
+							$publisherId
 						)
 					)
 					{
@@ -311,6 +318,7 @@
 				if ( 
 					$this->_matchTargeting( 
 						$tag, 
+						$tagId,
 						$this->_geolocation->getConnectionType(), 
 						$this->_geolocation->getCountryCode(), 
 						$ua['os'],
@@ -445,7 +453,7 @@
 		}
 
 
-		private function _matchTargeting ( array $tag, $connection_type, $country, $os, $device )
+		private function _matchTargeting ( array $tag, $tag_id, $connection_type, $country, $os, $device, $publisherId = null )
 		{
 			if ( 
 				$tag['connection_type'] 
@@ -482,6 +490,15 @@
 			{
 				return false;
 			}
+
+
+			if (
+				$publisherId
+				&& $this->_cache->isInSet( 'pubidblacklist:'.$tag['id'], $publisherId ) 
+			)
+			{
+				return false;
+			}			
 
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'os_matches' );
@@ -556,6 +573,20 @@
 			$this->_cache->useDatabase( $this->_getCurrentDatabase() );
 
 			return $data;
+		}
+
+
+		private function _replaceQueryStringMacros ( $tag_code )
+		{
+			foreach ( $this->_registry->httpRequest->getData() AS $param => $value )
+			{
+				if ( \preg_match( '/(QS)[a-zA-Z0-9_]+/', $param ) )
+				{
+					$tag_code = \preg_replace( '/({'.$param.'})/', $value, $tag_code  );
+				}
+			}
+
+			return $tag_code;	
 		}
 
 
