@@ -493,7 +493,7 @@
 				return false;
 			}
 
-
+			/*
 			if (
 				$publisherId
 				&& $this->_cache->isInSet( 'pubidblacklist:'.$tag['id'], $publisherId ) 
@@ -501,7 +501,8 @@
 			{
 				return false;
 			}			
-
+			*/
+		
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'os_matches' );
 
