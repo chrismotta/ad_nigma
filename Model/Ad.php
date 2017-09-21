@@ -516,14 +516,12 @@
 					case 'mobile+tablet':
 						if ( $device!='phablet' && $device!='smartphone' && $device!='tablet' )
 						{
-							die('aca1');
 							return false;
 						}
 					break;
 					case 'mobile':
 						if ( $device!='phablet' && $device!='smartphone' )
 						{
-							die('aca2');
 							return false;
 						}
 					break;
@@ -534,7 +532,6 @@
 							&& $tag['device'] != ''							
 						)
 						{
-							die('aca3');
 							return false;
 						}
 					break;
