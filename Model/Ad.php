@@ -59,7 +59,6 @@
 			$ips = \explode( ',', $ip );
 			$ip = $ips[0];
 
-			$ip = '181.169.130.102';
 
 			if ( !$userAgent || !$ip || !\filter_var($ip, \FILTER_VALIDATE_IP) )
 			{
