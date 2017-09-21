@@ -59,6 +59,8 @@
 			$ips = \explode( ',', $ip );
 			$ip = $ips[0];
 
+			$ip = '181.169.130.102';
+
 			if ( !$userAgent || !$ip || !\filter_var($ip, \FILTER_VALIDATE_IP) )
 			{
 				$this->_createWarning( 'Bad request', 'M000000A', 400 );
@@ -265,6 +267,7 @@
 					if ( 
 						$this->_matchTargeting( 
 							$tag, 
+							$tagId,
 							$this->_geolocation->getConnectionType(), 
 							$this->_geolocation->getCountryCode(), 
 							$ua['os'],
@@ -273,6 +276,7 @@
 						)
 					)
 					{
+
 						if ( $placement )
 						{
 							$cost 	 = $placement['payout']/1000;				
@@ -466,7 +470,7 @@
 			{
 				return false;
 			}
-
+			
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'conn_type_matches' );
 
@@ -493,7 +497,6 @@
 				return false;
 			}
 
-			/*
 			if (
 				$publisherId
 				&& $this->_cache->isInSet( 'pubidblacklist:'.$tag['id'], $publisherId ) 
@@ -501,7 +504,6 @@
 			{
 				return false;
 			}			
-			*/
 		
 			if ( Config\Ad::DEBUG_CACHE )
 				$this->_cache->incrementMapField( 'adstats', 'os_matches' );
@@ -514,11 +516,17 @@
 				{
 					case 'mobile+tablet':
 						if ( $device!='phablet' && $device!='smartphone' && $device!='tablet' )
+						{
+							die('aca1');
 							return false;
+						}
 					break;
 					case 'mobile':
 						if ( $device!='phablet' && $device!='smartphone' )
+						{
+							die('aca2');
 							return false;
+						}
 					break;
 					default:
 						if ( 
@@ -526,7 +534,10 @@
 							&& $tag['device'] != '-'
 							&& $tag['device'] != ''							
 						)
+						{
+							die('aca3');
 							return false;
+						}
 					break;
 				}
 			}
