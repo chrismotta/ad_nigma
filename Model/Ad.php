@@ -31,6 +31,10 @@
 			$this->_cache           	= $cache;
 			$this->_fraudDetection		= $fraudDetection;
 			$this->_passback			= false;
+
+			$this->_registry->qs_deviceid  = '';
+			$this->_registry->placement_id = '';
+			$this->_registry->publisher_id = '';
 		}
 
 
@@ -44,6 +48,9 @@
 			$placementId = $this->_registry->httpRequest->getParam('pid');
 			$publisherId = $this->_registry->httpRequest->getParam('pubid');
 			$timestamp   = $this->_registry->httpRequest->getTimestamp();
+
+			if ( $publisherId )
+				$this->_registry->publisher_id = $publisherId;
 
 			//-------------------------------------
 			// GET & VALIDATE USER DATA
@@ -90,6 +97,8 @@
 				
 				if ( !$placement )
 					$placementId = null;
+				else
+					$this->_registry->placement_id = $placementId;
 			}
 			else
 			{
@@ -590,6 +599,11 @@
 		{
 			foreach ( $this->_registry->httpRequest->getData() AS $param => $value )
 			{
+				if ( strtolower($param) == 'qs_deviceid' )
+				{
+					$this->_registry->qs_deviceid = $value;
+				}
+				
 				if ( \preg_match( '/(QS)[a-zA-Z0-9_]+/', $param ) )
 				{
 					$tag_code = \preg_replace( '/({'.$param.'})/', $value, $tag_code  );

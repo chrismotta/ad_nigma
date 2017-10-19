@@ -11,7 +11,19 @@ if( $registry->tag['analyze'] ){
 	// cmp = Campaign
 	// p = Source
 	// a = SubSource
-	echo '<img src="https://www.fqtag.com/pixel.cgi?org=2upravadave3hajasudr&p=TML_'.$registry->imp['placement_id'].'&a='.$registry->imp['publisher_id'].'&cmp=TML_'.$registry->tag['id'].'&fmt=banner&rt=displayImg&pfm=Platform&sl=1&fq=1" width="1" height="1" border="0" />';
+	// c1 = Device ID
+
+	if ( $registry->qs_deviceid != '' )
+		$deviceId = '&c1='.$registry->qs_deviceid;
+	else
+		$deviceId = '';
+
+	if ( $registry->publisher_id != '' )
+		$publisherId = '&a='.$registry->publisher_id;
+	else
+		$publisherId = '';
+
+	echo '<img src="https://www.fqtag.com/pixel.cgi?org=2upravadave3hajasudr&p=TML_'.$registry->placement_id.$publisherId.$deviceId.'&cmp=TML_'.$registry->tag['id'].'&fmt=banner&rt=displayImg&pfm=Platform&sl=1&fq=1" width="1" height="1" border="0" />';
 }
 
 ?>
