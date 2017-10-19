@@ -599,7 +599,7 @@
 		{
 			foreach ( $this->_registry->httpRequest->getData() AS $param => $value )
 			{
-				if ( strtolower($param) == 'qs_deviceid' )
+				if ( $param == 'QS_deviceid' )
 				{
 					$this->_registry->qs_deviceid = $value;
 				}
