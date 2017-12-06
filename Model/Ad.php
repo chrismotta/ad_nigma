@@ -48,6 +48,7 @@
 			$placementId = $this->_registry->httpRequest->getParam('pid');
 			$publisherId = $this->_registry->httpRequest->getParam('pubid');
 			$timestamp   = $this->_registry->httpRequest->getTimestamp();
+			$referer  	 = $this->_registry->httpRequest->getParam('referer');
 
 			if ( $publisherId )
 				$this->_registry->publisher_id = $publisherId;
@@ -56,6 +57,9 @@
 			// GET & VALIDATE USER DATA
 			//-------------------------------------
 
+			// if referer was not passed within parameter, get from header			
+			if ( !$referer )
+				$referer = $this->_registry->httpRequest->getReferer();
 
 			// check if load balancer exists. If exists get original ip from X-Forwarded-For header
 			$ip = $this->_registry->httpRequest->getHeader('X-Forwarded-For');
@@ -168,7 +172,8 @@
 				$this->_render( 
 					$tag, 
 					$tag_type, 
-					$publisherId 
+					$publisherId,
+					$referer 
 				)
 			)
 			{
@@ -185,7 +190,8 @@
 		private function _render( 
 			array $tag, 
 			$tag_type,
-			$publisherId = null 
+			$publisherId = null, 
+			$referer = null
 		)
 		{
 			$this->_registry->tag  = $tag;
@@ -215,7 +221,8 @@
 			$this->_registry->code = $this->_replaceMacros( 
 				$code,	
 				[
-					'{pubid}' => $publisherId
+					'{pubid}' 	=> $publisherId,
+					'{referer}' => $referer
 				] 
 			);
 
@@ -383,6 +390,20 @@
 					'revenue'		  => $revenue,			 
 					'cost'			  => $cost
 				]);
+
+				$wifiCarrier = $this->_registry->httpRequest->getParam('wificarrier');
+
+				if ( $wifiCarrier )
+				{
+					$this->_cache->useDatabase( 6 );
+
+					$this->_cache->set( 'carrier:'.$sessionHash, $wifiCarrier );
+
+					$this->_cache->addToSortedSet( 'wificarrierlogs', 0.00, $sessionHash );
+					$this->_cache->addToSet( 'wificarriers', $wifiCarrier );
+
+					$this->_cache->useDatabase( $this->_getCurrentDatabase() );
+				}
 
 				$this->_saveCounters( $tagId, $placementId, \date( 'Ymd', $timestamp ), true, $cost, $revenue, $timestamp );
 
