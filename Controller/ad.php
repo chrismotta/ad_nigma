@@ -20,6 +20,14 @@
 
 		public function route ( )
         {
+            //$ip2Location = new Framework\TCP\Geolocation\Source\IP2Location( Config\Ad::IP2LOCATION_BIN );
+            
+            $maxmind = new Framework\TCP\Geolocation\Source\Maxmind([
+                'path_conn_type' => Config\Ad::MAXMIND_DB_CONN_TYPE, 
+                'path_country'   => Config\Ad::MAXMIND_DB_COUNTRY, 
+                'path_isp'       => Config\Ad::MAXMIND_DB_ISP 
+            ]);
+
         	$ad = new Model\Ad(
         		$this->_registry,
         		new Framework\AdServing\FraudDetection\Forensiq(
@@ -29,7 +37,7 @@
         		),
         		new Framework\Database\Redis\Predis( 'tcp://'.Config\Ad::REDIS_CONFIG.':6379' ),
         		new Framework\Device\Detection\Piwik(),
-        		new Framework\TCP\Geolocation\Source\IP2Location( Config\Ad::IP2LOCATION_BIN )
+        	    $maxmind	
         	);
 
         	$path0 = $this->_registry->httpRequest->getPathElement(0);
