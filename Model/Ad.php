@@ -490,6 +490,12 @@
 
 		private function _matchTargeting ( array $tag, $tag_id, $connection_type, $country, $os, $device, $publisherId = null )
 		{
+			#equiv
+			if($connection_type == 'Cellular')
+				$connection_type = 'MOBILE';
+			if($connection_type == 'Cable/DSL')
+				$connection_type = 'WIFI';
+
 			if ( 
 				$tag['connection_type'] 
 				&& $tag['connection_type'] != $connection_type 
